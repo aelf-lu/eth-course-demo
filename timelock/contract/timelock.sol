@@ -2,9 +2,15 @@ pragma solidity 0.4.17;
 
 contract Timelock {
     address public admin; // admin
-    uint public constant GRACE_PERIOD = 7 days; // transaction can be executed in this period
     uint public delay; // transaction lock time;
     mapping (bytes32 => bool) public queuedTransactions; // txHash->bool map, record all the transactions in the queue
+    
+    uint public constant GRACE_PERIOD = 7 days; // transaction can be executed in this period
+
+    function Timelock(uint delay_) public {
+        delay = delay_;
+        admin = msg.sender;
+    }
 
     // onlyOwner modifier
     modifier onlyOwner() {
@@ -12,21 +18,10 @@ contract Timelock {
         _;
     }
 
-    // onlyTimelock modifier
-    modifier onlyTimelock() {
-        require(msg.sender == address(this), "Timelock: Caller not Timelock");
-        _;
-    }
-
-    function Timelock(uint delay_) public {
-        delay = delay_;
-        admin = msg.sender;
-    }
-
     /**
      * @dev 改变管理员地址，调用者必须是Timelock合约。
      */
-    function changeAdmin(address newAdmin) public onlyTimelock {
+    function changeAdmin(address newAdmin) public onlyOwner {
         admin = newAdmin;
 
         emit NewAdmin(newAdmin);
@@ -113,7 +108,7 @@ contract Timelock {
     }
 
     /**
-     * @dev 将一堆东西拼成交易的标识符
+     * @dev 将address,value,signature,data,executeTime拼成交易的TxHash
      */
     function getTxHash(
         address target,
